@@ -1,6 +1,6 @@
 # HIGHLAND 3D
 
-HIGHLAND 3D 可以读取 GPX 轨迹，并检查本地 GeoTIFF 高程文件是否覆盖轨迹。
+HIGHLAND 3D 可以读取 GPX 轨迹，检查本地 GeoTIFF 高程文件是否覆盖轨迹，并生成带轨迹的可交互三维地形。
 
 ## 安装
 
@@ -46,6 +46,31 @@ Windows 上如果 `python --version` 打开应用商店或提示找不到 Python
 - **图幅覆盖**报告落在栅格内的轨迹点数量，并区分全部、部分和没有覆盖。落在 NoData 像元上的点也计入图幅覆盖。
 
 真实数据验证使用 Copernicus DEM GLO-30 Public 的公开 GeoTIFF。它提供约 30 米级的地表高程，可能包含植被和建筑物的高度。获取数据后可在 `data/private/` 保存来源和瓦片编号，发布任何数据或衍生结果前按数据集许可核对署名要求。 [数据来源](https://registry.opendata.aws/copernicus-dem/) · [许可和署名](https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM)
+
+## 生成离线三维地形（M0-3）
+
+安装或更新 `requirements.txt` 中的依赖后，运行下面的命令。`--dem` 指向本地单波段 GeoTIFF，`--output` 可省略，默认生成 `output/terrain.html`。
+
+```powershell
+.\.venv\Scripts\python.exe terrain.py --dem "data/private/elevation.tif" --output "output/terrain.html"
+```
+
+用支持 WebGL 的浏览器打开生成的 HTML。拖动旋转，滚轮缩放，悬停查看坐标与高程。文件内嵌 Plotly，可以离线打开。
+
+程序用最近邻方法将栅格最长边缩至最多 300 个采样点，保留缺测处的空洞。显示的网格坐标来自 GeoTIFF 的仿射变换，高程来自栅格像元。视图采用独立的横向和纵向显示比例，适合观察起伏。高程单位以文件元数据为准，Copernicus GLO-30 的高程单位可查产品说明。 [Rasterio 重采样](https://rasterio.readthedocs.io/en/stable/topics/resampling.html) · [Copernicus 产品规格](https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM)
+
+## 叠加 GPX 轨迹（M0-4）
+
+在地形命令中加上 `--gpx`，默认输出到 `output/terrain-with-track.html`。
+
+```powershell
+.\.venv\Scripts\python.exe terrain.py --dem "data/private/elevation.tif" --gpx "data/private/track.gpx"
+Start-Process .\output\terrain-with-track.html
+```
+
+程序将 WGS84 经纬度转换到 DEM 的 CRS，在实际显示的地形三角面上插值，并在轨迹穿过三角面边界时补点。橙色线条会略抬高以便看清，悬停显示插值所得的曲面高程。GPX 的海拔字段不参与贴地计算。不同 GPX 分段以及缺测或超出显示曲面的区间会断开。
+
+导出的 HTML 包含轨迹坐标，默认存放在 Git 忽略的 `output/`。
 
 ## 运行测试
 
