@@ -1,2 +1,4 @@
 gpxpy==1.6.2
+numpy==2.4.6
 pytest==9.2.0
+rasterio==1.4.4
