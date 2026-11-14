@@ -61,14 +61,28 @@ Windows 上如果 `python --version` 打开应用商店或提示找不到 Python
 
 ## 叠加 GPX 轨迹（M0-4）
 
-在地形命令中加上 `--gpx`，默认输出到 `output/terrain-with-track.html`。
+在地形命令中加上 `--gpx`，默认输出到 `output/terrain-with-track.html`。默认按路线范围裁剪，四周留出至少 2 公里或路线投影包围盒长边的 20%，取较大值。程序以路线中心附近的 UTM 坐标系显示地形，三轴均以米为单位，默认采用真实比例。
 
 ```powershell
 .\.venv\Scripts\python.exe terrain.py --dem "data/private/elevation.tif" --gpx "data/private/track.gpx"
 Start-Process .\output\terrain-with-track.html
 ```
 
-程序将 WGS84 经纬度转换到 DEM 的 CRS，在实际显示的地形三角面上插值，并在轨迹穿过三角面边界时补点。橙色线条会略抬高以便看清，悬停显示插值所得的曲面高程。GPX 的海拔字段不参与贴地计算。不同 GPX 分段以及缺测或超出显示曲面的区间会断开。
+程序将 WGS84 经纬度转换到地形的显示坐标系，在实际显示的地形三角面上插值，并在轨迹穿过三角面边界时补点。橙色线条会略抬高以便看清，悬停显示插值所得的曲面高程。GPX 的海拔字段不参与贴地计算。不同 GPX 分段以及缺测或超出显示曲面的区间会断开。
+
+路线预览在接近源高程栅格采样间距的米制网格上重投影，并将显示网格限制在 30 万个顶点以内。高程波段未标注单位时按米解释，使用其他高程来源时请核对单位。加 `--full-tile` 可复现原来的整图幅展示。
+
+有本地 8 位三波段 RGB GeoTIFF 时，可通过 `--imagery "data/private/imagery.tif"` 将地表颜色对齐到同一份地形。影像只影响颜色，影像未覆盖的位置显示为灰绿色。
+
+```powershell
+.\.venv\Scripts\python.exe terrain.py --dem "data/private/elevation.tif" --gpx "data/private/track.gpx" --imagery "data/private/imagery.tif" --output "output/terrain-imagery.html"
+```
+
+影像需要带有地理坐标信息，普通 JPG 截图不能直接用于此参数。当前颜色采样在地形顶点上进行，所以最终颜色细节也受地形网格间距限制；输入 10 米影像并不会把约 30 米级 DEM 变成 10 米级地形。
+
+已用真实 Sentinel-2 L2A 真彩色影像完成本地验证：下载范围内的 RGB 裁片、读取场景分类检查云层，再与米制地形对齐。查询和下载是一次性数据准备，运行 `terrain.py` 只读取本地文件。可把拍摄日期、场景编号、原始下载链接、裁剪处理和文件 SHA256 一并保存在 `data/private/`，便于以后复现。影像日期应单独记录，不能把它当成徒步当天的现场影像。 [公开影像来源](https://registry.opendata.aws/sentinel-2-l2a-cogs/)
+
+发布预览前应添加所用数据的署名。处理后的 Sentinel 影像使用 `Contains modified Copernicus Sentinel data [年份]`；DEM 的署名请按对应来源要求填写。 [Sentinel 署名说明](https://documentation.dataspace.copernicus.eu/FAQ.html) · [Copernicus DEM 署名说明](https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM)
 
 导出的 HTML 包含轨迹坐标，默认存放在 Git 忽略的 `output/`。
 

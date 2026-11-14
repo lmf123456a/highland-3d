@@ -97,12 +97,15 @@ def drape_segment(grid: SurfaceGrid, points: list[GridPoint]) -> list[list[Verte
 
 
 def add_track_overlay(
-    figure: go.Figure, grid: SurfaceGrid, segments: list[list[GPXTrackPoint]]
+    figure: go.Figure, grid: SurfaceGrid, segments: list[list[GPXTrackPoint]], *,
+    metre_units: bool = False,
 ) -> None:
     """将 WGS84 轨迹变换到 DEM CRS，贴合到显示的地形曲面。"""
     grid_inverse = ~grid.transform
     # 只为绘图留出少量间隔，悬停显示的仍是插值得到的曲面高程。
-    lift = max(float(np.nanmax(grid.elevations) - np.nanmin(grid.elevations)) * 0.001, 0.01)
+    lift = 1.0 if metre_units else max(
+        float(np.nanmax(grid.elevations) - np.nanmin(grid.elevations)) * 0.001, 0.01
+    )
     for index, segment in enumerate(segments, start=1):
         if not segment:
             continue
